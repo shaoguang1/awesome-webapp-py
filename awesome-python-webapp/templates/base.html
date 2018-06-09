@@ -1,0 +1,89 @@
+<!-- base.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    {% block meta %}
+      <!-- block meta -->
+    {% endblock meta %}
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>{% block title %}
+      ?
+    {% endblock title %}- Awesome Python Webapp</title>
+    <link rel='stylesheet' href="/static/css/uikit.min.css" >
+    <link rel='stylesheet' href="/static/css/uikit-rtl.min.css" >
+    <link rel='stylesheet' href="/static/css/uikit-rtl.css" >
+    <link rel='stylesheet' href="/static/css/uikit.css" >
+   <!-- <script src="/static/js/uikit.min.js"></script>
+    <script src="/static/js/uikit-icons.min.js"></script>
+    <script src="/static/js/vue.js"></script>
+    
+    <script src="/static/js/jquery.js"></script>
+--> <script src="/static/static2/js/jquery.min.js"></script>
+    <script src="/static/static2/js/awesome.js"></script>
+    <script src="/static/static2/js/sha1.min.js"></script>
+    <script src="/static/static2/js/sticky.min.js"></script>
+    <script src="/static/static2/js/vue.min.js"></script>
+    <script src="/static/static2/js/uikit.min.js"></script>
+
+
+    {% block beforehead %}
+      <!-- block head -->
+    {% endblock beforehead %}
+</head>
+<body><div class=" uk-position-relative">
+    
+    <nav class=" uk-navbar-container">
+    <div  class="uk-navbar-left   uk-margin-large-bottom uk-container ">
+        <a class="  uk-active" href="/">Awesome</a>
+        <ul class="uk-navbar-nav  uk-margin-large-right  ">
+            <li><a href="/"><i uk-icon='home' class="uk-icon "></i>日志</a></li>
+            <li><a href="/"><i uk-icon='nut'></i>教程</a></li>
+            <li><a href="/"><i uk-icon='code'></i> 源码</a></li>
+        </ul>
+    
+    <div class="">
+        <ul class="uk-navbar-nav">
+        {% if __user__ %}
+            <li>
+                <a href="#0"><i></i>{{ __user__.name }}</a>
+                <div>
+                    <ul>
+                        <li><a href="/signout">登出</a></li>
+                    </ul>
+                </div>
+            </li>
+        {% else %}
+            <li><a href="/signin">登录</a></li>
+            <li><a href="/register">注册</a></li>
+        {% endif %}
+        
+        </ul>
+    </div>
+</div>
+    </nav>
+</div>
+    <div>
+        {% block content %}
+            这里定义一个content的block
+        {% endblock content %}
+    </div>
+    
+    <div class="uk-margin-large-top" style="background-color:#eee; border-top:1px solid #ccc;">
+        <div class="uk-container uk-container-center uk-text-center">
+            <div class="uk-panel uk-margin-top uk-margin-bottom">
+                <p>
+                    <a target="_blank" href="http://weibo.com/liaoxuefeng" class="uk-icon-button uk-icon-weibo"></a>
+                    <a target="_blank" href="https://github.com/michaelliao" class="uk-icon-button uk-icon-github"></a>
+                    <a target="_blank" href="http://www.linkedin.com/in/liaoxuefeng" class="uk-icon-button uk-icon-linkedin-square"></a>
+                    <a target="_blank" href="https://twitter.com/liaoxuefeng" class="uk-icon-button uk-icon-twitter"></a>
+                </p>
+                <p>Powered by <a href="http://awesome.liaoxuefeng.com">Awesome Python Webapp</a>. Copyright &copy; 2014. [<a href="/manage/" target="_blank">Manage</a>]</p>
+                <p><a href="http://www.liaoxuefeng.com/" target="_blank">www.liaoxuefeng.com</a>. All rights reserved.</p>
+                <a target="_blank" href="http://www.w3.org/TR/html5/"><i class="uk-icon-html5" style="font-size:64px; color: #444;"></i></a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

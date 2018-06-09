@@ -10,6 +10,8 @@ from jinja2 import Environment, FileSystemLoader
 
 from coroweb import add_routes, add_static
 import orm
+from config import configs
+from handlers import cookie2user, COOKIE_NAME
 # def index(request):
 #     #返回web的请求
 #     return web.Response(body=b'<h1>Awesome</h1>')
@@ -77,7 +79,7 @@ async def response_factory(app, handler):
             return resp
         if isinstance(r, str):
             if r.startswith('redirect:'):
-                return HTTPFound(r[0:])
+                return HTTPFound(r[9:])
             resp = web.Response(body=r.encode('utf-8'))
             resp.content_type = 'text/html;charset=utf-8'
             return resp
@@ -102,7 +104,7 @@ async def response_factory(app, handler):
         resp.content_type = 'text/plain;cherset=utf-8'
         return resp
     return response
-#datetime_filter()函数实质是一个拦截器
+#datetime_filter()函数实质是一个拦截器,把一个浮点数转换成日期字符串。
 def datetime_filter(t):
     delta = int(time.time()-t)
     if delta < 60 :
