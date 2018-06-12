@@ -15,41 +15,41 @@
     <link rel='stylesheet' href="/static/css/uikit-rtl.min.css" >
     <link rel='stylesheet' href="/static/css/uikit-rtl.css" >
     <link rel='stylesheet' href="/static/css/uikit.css" >
-   <!-- <script src="/static/js/uikit.min.js"></script>
+    <script src="/static/js/uikit.min.js"></script>
     <script src="/static/js/uikit-icons.min.js"></script>
-    <script src="/static/js/vue.js"></script>
-    
+   <!-- <script src="/static/js/vue.js"></script>
+    <script src="/static/static2/js/uikit.min.js"></script>
     <script src="/static/js/jquery.js"></script>
 --> <script src="/static/static2/js/jquery.min.js"></script>
     <script src="/static/static2/js/awesome.js"></script>
     <script src="/static/static2/js/sha1.min.js"></script>
     <script src="/static/static2/js/sticky.min.js"></script>
     <script src="/static/static2/js/vue.min.js"></script>
-    <script src="/static/static2/js/uikit.min.js"></script>
+    
 
 
     {% block beforehead %}
       <!-- block head -->
     {% endblock beforehead %}
 </head>
-<body><div class=" uk-position-relative">
-    
-    <nav class=" uk-navbar-container">
-    <div  class="uk-navbar-left   uk-margin-large-bottom uk-container ">
-        <a class="  uk-active" href="/">Awesome</a>
-        <ul class="uk-navbar-nav  uk-margin-large-right  ">
+<body>
+    <div class=" uk-position-relative" style="margin:10px;">
+    <div class=" uk-navbar-container" uk-navbar>
+    <div  class="uk-navbar-left  " style="margin-left:20px;">
+        <a class=" uk-active" href="/">Awesome</a>
+        <ul class="uk-navbar-nav ">
             <li><a href="/"><i uk-icon='home' class="uk-icon "></i>日志</a></li>
             <li><a href="/"><i uk-icon='nut'></i>教程</a></li>
             <li><a href="/"><i uk-icon='code'></i> 源码</a></li>
         </ul>
-    
-    <div class="">
+    </div>
+    <div class="uk-navbar-right">
         <ul class="uk-navbar-nav">
         {% if __user__ %}
-            <li>
-                <a href="#0"><i></i>{{ __user__.name }}</a>
-                <div>
-                    <ul>
+            <li >
+                <a href="#0"><i uk-icon='user'></i>{{ __user__.name }}</a>
+                <div class="uk-navbar-dropdown ">
+                    <ul class="uk-nav uk-navbar-dropdown-nav">
                         <li><a href="/signout">登出</a></li>
                     </ul>
                 </div>
@@ -61,9 +61,8 @@
         
         </ul>
     </div>
-</div>
-    </nav>
-</div>
+    </div>
+    </div>
     <div>
         {% block content %}
             这里定义一个content的block

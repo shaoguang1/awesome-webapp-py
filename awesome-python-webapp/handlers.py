@@ -20,7 +20,7 @@ def user2cookie(user, max_age):
     generate cookie str by user.
     '''
     #build cookie sting by : id-expires-sha1
-    expires = str(time.time() +max_age)
+    expires = str(time.time() + max_age)
     s = '%s-%s-%s-%s' % (user.id, user.passwd, expires, _COOKIE_KEY)
     L = [user.id, expires, hashlib.sha1(s.encode('utf-8')).hexdigest()]
     return '-'.join(L)
@@ -37,9 +37,10 @@ def cookie2user(cookie_str):
         if len(L) !=3:
             return None
         uid, expires, sha1 = L
-        if expires < time.time():
+        print (time.time())
+        if float(expires) < time.time():
             return None
-        user = yield from User.findAll(uid)
+        user = yield from User.find(uid)
         if user is None:
             return None
         s = '%s-%s-%s-%s' % (uid, user.passwd, expires, _COOKIE_KEY)
@@ -66,7 +67,8 @@ def index(request):
     ]
     return {
         '__template__': 'blogs.html',
-        'blogs': blogs
+        'blogs': blogs,
+        # '__user__':request.__user__
     }
 
 @get('/api/users')
@@ -88,7 +90,7 @@ _RE_EMAIL = re.compile(r'^[a-z0-9\.\-\_]+\@[a-z0-9\-\_]+(\.[a-z0-9\-\_]+){1,4}$'
 _RE_PASSWD = re.compile(r'^[0-9a-f]{40}$')
 
 @post('/api/users')
-def api_register_user(*,email, name, passwd):
+async def api_register_user(*,email, name, passwd):
     
     logging.info('%s' % name)
     if not name or not name.strip():
@@ -98,7 +100,7 @@ def api_register_user(*,email, name, passwd):
         raise APIValueError('email')
     if not passwd or not _RE_PASSWD.match(passwd):
         raise APIValueError('passwd')
-    users = yield from User.findAll('email=?', [email])
+    users = await User.findAll('email=?', [email])
     if len(users) > 0:
         raise APIError('register:failed', 'email', 'Email is already in use.')
     uid = next_id()
@@ -110,7 +112,7 @@ def api_register_user(*,email, name, passwd):
         passwd=hashlib.sha1(shal_passwd.encode('utf-8')).hexdigest(), 
         image='http://www.gravatar.com/avatar/%s?d=mm&s=120' % hashlib.md5(email.encode('utf-8')).hexdigest()
         )
-    yield from user.save()
+    await user.save()
     #make session cookie
     r = web.Response()
     r.set_cookie(COOKIE_NAME,user2cookie(user,86400), max_age=86400, httponly=True)
@@ -118,3 +120,63 @@ def api_register_user(*,email, name, passwd):
     r.content_type = 'application/json'
     r.body = json.dumps(user,ensure_ascii=False).encode('utf-8')
     return r
+
+@get('/signin')
+def signin():
+    # users = await User.findAll()
+    return {
+        '__template__' : 'signin.html'
+        
+    }
+
+@get('/signout')
+def signout(request):
+    referer = request.headers.get('Referer')
+    r = web.HTTPFound(referer or '/')
+    r.set_cookie(COOKIE_NAME, '-deleted-', max_age=0, httponly=True)
+    logging.info('user signed out.')
+    return r
+
+@post('/api/authenticate')
+async def authenticate(*, email, passwd):
+    if not email:
+        raise APIValueError("email", 'Invalid email.')
+    if not passwd:
+        raise APIValueError("passwd", 'Invalid passwd.')
+    users = await User.findAll('email=?', [email])
+    if len(users) == 0 :
+        raise APIValueError('email', 'email not exist')
+    user = users[0]
+    #check passwd
+    sha1 = hashlib.sha1()
+    sha1.update(user.id.encode('utf-8'))
+    sha1.update(b':')
+    sha1.update(passwd.encode('utf-8'))
+    if user.passwd != sha1.hexdigest():
+        raise APIValueError('passwd', 'Inalid password.')
+    #authenticate ok, set cookie:
+    r = web.Response()
+    r.set_cookie(COOKIE_NAME,user2cookie(user,86400), max_age=86400, httponly=True)
+    user.passwd = '******'
+    r.content_type = 'application/json'
+    r.body = json.dumps(user, ensure_ascii=False).encode('utf-8')
+    return r
+
+@post('/api/blogs')
+def api_create_blog(request, *, name, summary, content):
+    check_admin(request)
+    if not name or not name.strip():
+        raise APIValueError('name', 'name cannot be empty.')
+    if not summary or not summary.strip():
+        raise APIValueError('summary', 'summary cannot be empty.')
+    if not content or not content.strip():
+        raise APIValueError('content', 'content cannot be empty.')
+    blog = Blog(user_id=request.__user__.id,
+                user_name=request.__user__.name,
+                user_image=request.__user__.image,
+                name=name.strip(),
+                summary=summary.strip(),
+                content=content.strip()
+    )
+    yield from blog.save()
+    return blog

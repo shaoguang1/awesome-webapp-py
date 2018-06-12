@@ -49,12 +49,31 @@ middleware的用处就在于把通用的功能从每个URL处理函数中拿出�
 这些middleware factory接受一个app实例，一个handler两个参数，并返回一个新的handler。
 '''
 #记录URL日志的logger
+@asyncio.coroutine
 async def logger_factory(app, handler):
     async def logger (request):
         logging.info('Request:%s %s' % (request.method, request.path))
         return (await handler(request))
     return logger
 
+@asyncio.coroutine
+async def auth_factory(app,handler):
+    @asyncio.coroutine
+    def auth(request):
+        logging.info('check user:%s %s' % (request.method, request.path))
+        request.__user__ = None
+        cookie_str = request.cookies.get(COOKIE_NAME)
+        if cookie_str:
+            user = yield from cookie2user(cookie_str)
+            if user:
+                logging.info('set current user:  %s' % user.email)
+                request.__user__ = user
+        if request.path.startswith('/manage/') and (request.__user__ is None or not request.__user__.admin):
+            return web.HTTPFound('/signin')
+        return (yield from handler(request))
+    return auth
+
+@asyncio.coroutine
 async def data_factory(app, handler):
     async def parse_data(request):
         if request.method == 'POST':
@@ -66,7 +85,9 @@ async def data_factory(app, handler):
                 logging.info('request form:%s' % str(request.__data__))
         return (await handler(request))
     return parse_data
+
 #response这个middleware把返回值转换为web.Response对象再返回，以保证满足aiohttp的要求：
+@asyncio.coroutine
 async def response_factory(app, handler):
     async def response(request):
         logging.info('Response handler...')
@@ -79,7 +100,7 @@ async def response_factory(app, handler):
             return resp
         if isinstance(r, str):
             if r.startswith('redirect:'):
-                return HTTPFound(r[9:])
+                return web.HTTPFound(r[9:])
             resp = web.Response(body=r.encode('utf-8'))
             resp.content_type = 'text/html;charset=utf-8'
             return resp
@@ -90,6 +111,7 @@ async def response_factory(app, handler):
                 resp.content_type = 'application/json;charset=utf-8'
                 return resp
             else:
+                r['__user__'] = request.__user__
                 resp = web.Response(body=app['__templating__'].get_template(template).render(**r).encode('utf-8'))
                 resp.content_type = 'text/html;charset=utf-8'
                 return resp
@@ -104,6 +126,7 @@ async def response_factory(app, handler):
         resp.content_type = 'text/plain;cherset=utf-8'
         return resp
     return response
+
 #datetime_filter()函数实质是一个拦截器,把一个浮点数转换成日期字符串。
 def datetime_filter(t):
     delta = int(time.time()-t)
@@ -127,7 +150,7 @@ async def init(loop):
 
     #添加middleware、jinja2模板和自注册的支持
     app = web.Application(loop=loop, middlewares=[
-        logger_factory, response_factory
+        logger_factory, auth_factory, response_factory
     ])
     init_jinja2(app, filters=dict(datetime=datetime_filter))
     add_routes(app, 'handlers')

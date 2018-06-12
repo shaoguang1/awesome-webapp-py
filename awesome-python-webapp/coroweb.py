@@ -103,7 +103,7 @@ class RequestHandler(object):
                 else:
                     return web.HTTPBadRequest('unsupported content-type:%s' % request.content_type)
             if request.method == 'GET':
-                qs = requset.query_string
+                qs = request.query_string
                 if qs:
                     kw = dict()
                     for k, v in parse.parse_qs(qs,True).items():
@@ -126,7 +126,7 @@ class RequestHandler(object):
         if self._required_kw_args:#假如命名关键字参数(没有附加默认值)，request没有提供相应的数值，报错
             for name in self._required_kw_args:
                 if not name in kw:
-                    return HTTPBadRequest('missing argument:%s' % name)
+                    return web.HTTPBadRequest('missing argument:%s' % name)
         logging.info('call with args:%s' % str(kw))
         try:
             r = await self._func(**kw)
