@@ -27,6 +27,7 @@ async def create_pool(loop, **kw):
 @asyncio.coroutine
 def select(sql, args, size=None):
     log(sql, args)
+    print(sql.replace('?','%s'), args or ())
     global __pool
     with (yield from __pool) as conn:
         cur = yield from conn.cursor(aiomysql.DictCursor)
@@ -38,18 +39,23 @@ def select(sql, args, size=None):
         yield from cur.close()
         logging.info('rows returned : %s' % len(rs))
         return rs
+
 @asyncio.coroutine
-def execute(sql, args):
+def execute(sql, args, autocommit=True):
     log(sql)
     with (yield from __pool) as conn:
+        if not autocommit:
+            yield from conn.begin()
         try:
             cur = yield from conn.cursor()
             yield from cur.execute(sql.replace('?', '%s'), args)
             affected  = cur.rowcount
             yield from cur.close()
-        except BaseException :
-            # if not autocommit:
-            #     yield from conn.rollback()
+            if not autocommit:
+                yield from conn.commit()
+        except BaseException as e :
+            if not autocommit:
+                yield from conn.rollback()
             raise
         return affected
         
@@ -165,6 +171,7 @@ class Model(dict, metaclass=ModelMetaclass):
         return value
 
     @classmethod
+    @asyncio.coroutine
     async def findAll(cls, where=None, args=None, **kw):
         'find objects by where clause'
         sql = [cls.__select__]
@@ -182,18 +189,20 @@ class Model(dict, metaclass=ModelMetaclass):
             sql.append('limit')
             if isinstance(limit, int):
                 sql.append('?')
-                sql.append(limit)
+                args.append(limit)
             elif isinstance(limit, tuple) and len(limit) == 2:
                 sql.append('?, ?')
                 args.extend(limit)
+                print (args)
             else:
                 raise ValueError('Invalid limit value: %s ' % str(limit)) 
         rs = await select(' '.join(sql), args)
         return [cls(**r) for r in rs]
-    
-    async def findNumber(self, cls, selectField, where=None, args=None):
+    @classmethod
+    @asyncio.coroutine
+    async def findNumber(cls, selectField, where=None, args=None):
         'find number by select and where'
-        sql = ['select %s _num_ from %s' % (selectField, cls.__table__)]
+        sql = ['select %s _num_ from `%s`' % (selectField, cls.__table__)]
         if where:
             sql.append('where')
             sql.append(where)
@@ -203,6 +212,7 @@ class Model(dict, metaclass=ModelMetaclass):
         return rs[0]['_num_']
 
     @classmethod
+    @asyncio.coroutine
     async def find(cls, pk):
         'find object by primary key'
         rs = await select('%s where `%s`=?' % (cls.__select__, cls.__primary_key__), [pk], 1)
@@ -210,6 +220,7 @@ class Model(dict, metaclass=ModelMetaclass):
             return None
         return cls(**rs[0])
 
+    @asyncio.coroutine
     async def save(self):
         args = list(map(self.getValueOrDefault, self.__fields__))
         args.append(self.getValueOrDefault(self.__primary_key__))

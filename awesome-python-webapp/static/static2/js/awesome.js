@@ -317,7 +317,7 @@ function _httpJSON(method, url, data, callback) {
     $.ajax(opt).done(function (r) {
         if (r && r.error) {
             return callback(r);
-        }
+        }alert(r)
         return callback(null, r);
     }).fail(function (jqXHR, textStatus) {
         return callback({'error': 'http_bad_response', 'data': '' + jqXHR.status, 'message': '网络好像出问题了 (HTTP ' + jqXHR.status + ')'});

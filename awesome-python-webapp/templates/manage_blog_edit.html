@@ -1,0 +1,99 @@
+
+{% extends "base.html" %}
+
+{% block title %} 编写日志 {% endblock title %}
+
+{% block beforehead %}
+<script>
+
+var ID = '{{id}}',
+    action = '{{action}}';
+function initVM(blog){
+    var vm = new Vue({
+        el:'#vm',
+        data:blog,
+        methods:{
+            submit:function (event){
+                event.preventDefault();
+                var $form = $('#vm').find('form');
+                $form.postJSON(action, this.$data, function(err, r){
+                    if (err){
+                        $form.showFormError(err);
+                    }
+                    else{
+                        return location.assign('/manage/blogs');
+                    }
+                });
+            }
+        }
+    });
+    $('#vm').show();
+}
+
+$(function (){
+    if (ID){
+        getJSON('/api/blogs/' + ID , function(err,blog){
+            if (err){
+                return fatal(err);
+            }
+            $("#loading").hide();
+            initVM(blog);
+        });
+    }
+    else{
+        $('#loading').hide();
+        initVM({
+            name:'',
+            summary:'',
+            content:''
+        });
+    }
+})
+</script>
+{% endblock beforehead %}
+
+{% block content %}
+<div class="uk-text-left" uk-grid>
+<div class="uk-width-1-5 " >
+    <ul>
+        <li><a href="/manage/comments">评论</a></li>
+        <li><a href="/manage/blogs">日志</a></li>
+        <li><a href="/manage/users">用户</a></li>
+    </ul>
+</div>
+
+<div id="vm" v-on='submit:submit' class="uk-width-4-5  ">
+    <form action="" class=" " >
+        <div class="uk-alert uk-alert-danger uk-hidden"></div>
+        <h3 style="margin-top:0px;">write your blog</h3>
+        <div class="uk-form-row">
+            <label for="">标题：</label>
+            <div>
+                <input v-model='name' class="uk-input" type="text" placeholder="标题" >
+            </div>
+        </div>
+        <div class="uk-form-row">
+            <label for="">摘要：</label>
+            <div>
+                <textarea v-model='summary' class="uk-textarea" rows="4" name="summary" type="text" placeholder="摘要" ></textarea>
+            </div>
+        </div>
+        <div class="uk-form-row">
+            <label for="">内容：</label>
+            <div>
+                <textarea v-model='content' class="uk-textarea" rows="16" name="content" type="text" placeholder="内容" ></textarea>
+            </div>
+        </div>
+        <div class="uk-form-row">
+            <button type="submit">保存</button>
+            <a href="/manage/blogs" class="uk-button">取消</a>
+        </div>
+    </form>
+</div>
+</div>
+<div id="error" class="uk-width-1-1"></div>
+
+<div id="loading" class="uk-width-1-1 uk-text-center">
+    <span>正在加载...</span>
+</div>
+{% endblock content %}
